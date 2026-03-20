@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Farmacias de turno</title>
+</head>
+<body>
+
+<h2>Farmacias de turno</h2>
+
+<ul id="lista"></ul>
+
+<script>
+fetch("PEGAR_ACA_TU_URL_DE_APPS_SCRIPT")
+  .then(res => res.json())
+  .then(data => {
+    let lista = document.getElementById("lista");
+
+    data.forEach(f => {
+      if (f.turno === "SI") {
+        let li = document.createElement("li");
+
+        li.innerHTML = `
+          <b>${f.nombre}</b><br>
+          ${f.direccion}<br>
+          📞 ${f.telefono}<br>
+          🟢 DE TURNO (${f.horario})
+          <hr>
+        `;
+
+        lista.appendChild(li);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
