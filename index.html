@@ -111,7 +111,9 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 document.getElementById("btnInstalar").addEventListener("click", async () => {
-  deferredPrompt.prompt();
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+  }
 });
 
 // 📍 ubicación
@@ -132,6 +134,17 @@ function distancia(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// 📅 normalizar fecha
+function normalizarFecha(fecha) {
+  let partes = fecha.split("/");
+  if (partes.length === 3) {
+    return partes[0].padStart(2,'0') + "/" +
+           partes[1].padStart(2,'0') + "/" +
+           partes[2];
+  }
+  return fecha;
+}
+
 // 📡 cargar datos
 function cargarDatos() {
   fetch("https://script.google.com/macros/s/AKfycbymd8bLia1pKLJT-4Qmu2N7zez8KR_F6-TMo_nqdnwW_OFL5WzYoyBmbAT9zWCT0yFraw/exec")
@@ -142,14 +155,27 @@ function cargarDatos() {
       contenedor.innerHTML = "";
 
       let hoy = new Date();
-      let fechaHoy = String(hoy.getDate()).padStart(2,'0') + "/" +
-                     String(hoy.getMonth()+1).padStart(2,'0');
+      let fechaHoy =
+        String(hoy.getDate()).padStart(2,'0') + "/" +
+        String(hoy.getMonth()+1).padStart(2,'0') + "/" +
+        hoy.getFullYear();
 
-      let farmacias = data.filter(f =>
-        f.turno && f.turno.toUpperCase() === "SI" && f.fecha === fechaHoy
-      );
+      let farmacias = data.filter(f => {
+        if (!f.fecha) return false;
 
+        let fecha = normalizarFecha(f.fecha.toString());
+
+        return (
+          f.turno &&
+          f.turno.toString().toUpperCase() === "SI" &&
+          fecha === fechaHoy
+        );
+      });
+
+      // ordenar por cercanía
       if (userLat && userLng) {
+        farmacias = farmacias.filter(f => f.lat && f.lng);
+
         farmacias.sort((a,b) =>
           distancia(userLat,userLng,a.lat,a.lng) -
           distancia(userLat,userLng,b.lat,b.lng)
@@ -157,11 +183,12 @@ function cargarDatos() {
       }
 
       if (farmacias.length === 0) {
-        contenedor.innerHTML = `<div class="vacio">❌ No hay farmacias hoy</div>`;
+        contenedor.innerHTML = `<div class="vacio">❌ No hay farmacias de turno hoy</div>`;
         return;
       }
 
       farmacias.forEach(f => {
+
         let d = (userLat && f.lat) ?
           `📏 ${distancia(userLat,userLng,f.lat,f.lng).toFixed(2)} km<br>` : "";
 
@@ -183,6 +210,11 @@ function cargarDatos() {
 
         contenedor.appendChild(div);
       });
+
+    })
+    .catch(() => {
+      document.getElementById("lista").innerHTML =
+        `<div class="vacio">⚠️ Error al cargar datos</div>`;
     });
 }
 
