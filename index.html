@@ -4,7 +4,6 @@
   <title>Farmacias de turno</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
 
   <style>
@@ -95,17 +94,19 @@
 </button>
 
 <div class="filtros">
-  <select id="localidad">
-    <option value="">Todas</option>
-    <option>La Plata</option>
-    <option>Mar del Plata</option>
-    <option>Quilmes</option>
-    <option>Lanús</option>
+
+  <!-- PROVINCIA -->
+  <select id="provincia" onchange="cargarLocalidades()">
+    <option value="">Provincia</option>
   </select>
 
-  <input type="text" id="cp" placeholder="Código postal">
+  <!-- LOCALIDAD -->
+  <select id="localidad">
+    <option value="">Localidad</option>
+  </select>
 
-  <button onclick="cargarDatos()">Buscar</button>
+  <button onclick="filtrar()">Buscar</button>
+
 </div>
 
 <div id="lista"></div>
@@ -113,9 +114,10 @@
 </div>
 
 <script>
-// 📲 PWA instalar
-let deferredPrompt;
+let datos = [];
 
+// 📲 instalar app
+let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
@@ -123,80 +125,110 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 document.getElementById("btnInstalar").addEventListener("click", async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-  }
+  if (deferredPrompt) deferredPrompt.prompt();
 });
 
-// 📡 datos
-function cargarDatos() {
+// 📡 cargar datos inicial
+fetch("TU_URL_DE_APPS_SCRIPT")
+  .then(res => res.json())
+  .then(data => {
+    datos = data;
+    cargarProvincias();
+  });
 
-  let loc = document.getElementById("localidad").value.toLowerCase();
-  let cp = document.getElementById("cp").value;
+// 🏙️ provincias únicas
+function cargarProvincias() {
+  let provincias = [...new Set(datos.map(f => f.provincia).filter(Boolean))];
 
-  fetch("https://script.google.com/macros/s/AKfycbymd8bLia1pKLJT-4Qmu2N7zez8KR_F6-TMo_nqdnwW_OFL5WzYoyBmbAT9zWCT0yFraw/exec")
-    .then(res => res.json())
-    .then(data => {
+  let select = document.getElementById("provincia");
+  provincias.forEach(p => {
+    let opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    select.appendChild(opt);
+  });
+}
 
-      let contenedor = document.getElementById("lista");
-      contenedor.innerHTML = "";
+// 🏘️ localidades según provincia
+function cargarLocalidades() {
+  let prov = document.getElementById("provincia").value;
 
-      let hoy = new Date();
-      let fechaHoy =
-        String(hoy.getDate()).padStart(2,'0') + "/" +
-        String(hoy.getMonth()+1).padStart(2,'0') + "/" +
-        hoy.getFullYear();
+  let localidades = [...new Set(
+    datos
+      .filter(f => f.provincia === prov)
+      .map(f => f.localidad)
+      .filter(Boolean)
+  )];
 
-      let resultados = data.filter(f => {
+  let select = document.getElementById("localidad");
+  select.innerHTML = `<option value="">Localidad</option>`;
 
-        let okLoc = !loc || (f.localidad && f.localidad.toLowerCase() === loc);
-        let okCP = !cp || (f.cp && f.cp.toString() === cp);
+  localidades.forEach(l => {
+    let opt = document.createElement("option");
+    opt.value = l;
+    opt.textContent = l;
+    select.appendChild(opt);
+  });
+}
 
-        return (
-          f.turno &&
-          f.turno.toString().toUpperCase() === "SI" &&
-          f.fecha === fechaHoy &&
-          okLoc &&
-          okCP
-        );
-      });
+// 🔎 filtrar
+function filtrar() {
 
-      if (resultados.length === 0) {
-        contenedor.innerHTML = `<div class="vacio">❌ No hay resultados</div>`;
-        return;
-      }
+  let prov = document.getElementById("provincia").value;
+  let loc = document.getElementById("localidad").value;
 
-      resultados.forEach(f => {
+  let hoy = new Date();
+  let fechaHoy =
+    String(hoy.getDate()).padStart(2,'0') + "/" +
+    String(hoy.getMonth()+1).padStart(2,'0') + "/" +
+    hoy.getFullYear();
 
-        let div = document.createElement("div");
-        div.className = "card";
+  let resultados = datos.filter(f => {
 
-        div.innerHTML = `
-          <b>${f.nombre}</b><br>
-          📍 ${f.direccion} (${f.localidad})<br>
-          📞 ${f.telefono}<br>
-          🟢 DE TURNO (${f.horario})
+    return (
+      f.turno &&
+      f.turno.toString().toUpperCase() === "SI" &&
+      f.fecha === fechaHoy &&
+      (!prov || f.provincia === prov) &&
+      (!loc || f.localidad === loc)
+    );
+  });
 
-          <a class="boton llamar" href="tel:${f.telefono}">
-            📲 Llamar
-          </a>
+  let contenedor = document.getElementById("lista");
+  contenedor.innerHTML = "";
 
-          <a class="boton mapa"
-             href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.direccion)}"
-             target="_blank">
-            📍 Cómo llegar
-          </a>
-        `;
+  if (resultados.length === 0) {
+    contenedor.innerHTML = `<div class="vacio">❌ No hay resultados</div>`;
+    return;
+  }
 
-        contenedor.appendChild(div);
-      });
+  resultados.forEach(f => {
+    let div = document.createElement("div");
+    div.className = "card";
 
-    });
+    div.innerHTML = `
+      <b>${f.nombre}</b><br>
+      📍 ${f.direccion} (${f.localidad})<br>
+      📞 ${f.telefono}<br>
+      🟢 DE TURNO (${f.horario})
+
+      <a class="boton llamar" href="tel:${f.telefono}">
+        📲 Llamar
+      </a>
+
+      <a class="boton mapa"
+         href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.direccion)}"
+         target="_blank">
+        📍 Cómo llegar
+      </a>
+    `;
+
+    contenedor.appendChild(div);
+  });
 }
 </script>
 
 <script>
-// service worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
