@@ -23,11 +23,6 @@
       color: var(--text);
       margin: 0;
       padding: 10px;
-      transition: 0.3s;
-    }
-
-    h2 {
-      text-align: center;
     }
 
     .topbar {
@@ -36,9 +31,13 @@
       align-items: center;
     }
 
+    h2 {
+      font-size: 20px;
+    }
+
     .toggle {
       cursor: pointer;
-      padding: 6px 10px;
+      padding: 8px 12px;
       border-radius: 8px;
       background: #444;
       color: white;
@@ -48,19 +47,23 @@
     .card {
       background: var(--card);
       padding: 15px;
-      margin: 10px 0;
-      border-radius: 12px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      margin: 12px 0;
+      border-radius: 14px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      font-size: 16px;
     }
 
     .boton {
-      display: inline-block;
-      margin-top: 8px;
-      padding: 8px 12px;
-      border-radius: 8px;
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
       text-decoration: none;
       color: white;
       font-weight: bold;
+      font-size: 16px;
     }
 
     .llamar {
@@ -74,13 +77,21 @@
     .turno {
       color: #00c853;
       font-weight: bold;
+      display: block;
+      margin-top: 5px;
     }
 
     .vacio {
       text-align: center;
-      margin-top: 50px;
+      margin-top: 60px;
       font-size: 18px;
       color: gray;
+    }
+
+    @media (max-width: 600px) {
+      h2 { font-size: 18px; }
+      .card { font-size: 15px; }
+      .boton { font-size: 15px; padding: 10px; }
     }
   </style>
 </head>
@@ -99,7 +110,6 @@
 function toggleDark() {
   document.body.classList.toggle("dark");
 
-  // guardar preferencia
   if (document.body.classList.contains("dark")) {
     localStorage.setItem("modo", "dark");
   } else {
@@ -111,7 +121,6 @@ function toggleDark() {
 if (localStorage.getItem("modo") === "dark") {
   document.body.classList.add("dark");
 }
-
 
 // 📡 DATOS
 fetch("TU_URL_DE_APPS_SCRIPT")
@@ -145,7 +154,7 @@ fetch("TU_URL_DE_APPS_SCRIPT")
           <b>${f.nombre}</b><br>
           📍 ${f.direccion}<br>
           📞 ${f.telefono}<br>
-          <span class="turno">🟢 DE TURNO (${f.horario})</span><br>
+          <span class="turno">🟢 DE TURNO (${f.horario})</span>
 
           <a class="boton llamar" href="tel:${f.telefono}">
             📲 Llamar
