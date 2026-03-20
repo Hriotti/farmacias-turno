@@ -4,54 +4,60 @@
   <title>Farmacias de turno</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
 
   <style>
-    :root {
-      --bg: #f2f2f2;
-      --card: white;
-      --text: black;
-    }
-
-    body.dark {
-      --bg: #121212;
-      --card: #1e1e1e;
-      --text: #ffffff;
-    }
-
     body {
       font-family: Arial;
-      background: var(--bg);
-      color: var(--text);
+      background: #f2f2f2;
       margin: 0;
       padding: 10px;
     }
 
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .container {
+      max-width: 600px;
+      margin: auto;
     }
 
-    .toggle {
-      cursor: pointer;
-      padding: 8px 12px;
+    h2 {
+      text-align: center;
+    }
+
+    .filtros {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    select, input, button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
       border-radius: 8px;
-      background: #444;
+    }
+
+    button {
+      background: #007bff;
       color: white;
+      border: none;
+      font-weight: bold;
+    }
+
+    .instalar {
+      background: #28a745;
     }
 
     .card {
-      background: var(--card);
+      background: white;
       padding: 15px;
-      margin: 12px 0;
-      border-radius: 14px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      margin: 10px 0;
+      border-radius: 12px;
     }
 
     .boton {
       display: block;
-      width: 100%;
       margin-top: 10px;
       padding: 12px;
       border-radius: 10px;
@@ -61,49 +67,55 @@
       font-weight: bold;
     }
 
-    .llamar { background: #28a745; }
-    .mapa { background: #007bff; }
-
-    .turno {
-      color: #00c853;
-      font-weight: bold;
-    }
+    .llamar { background: green; }
+    .mapa { background: blue; }
 
     .vacio {
       text-align: center;
-      margin-top: 50px;
+      margin-top: 20px;
       color: gray;
+    }
+
+    @media (min-width: 600px) {
+      .filtros {
+        flex-direction: row;
+      }
     }
   </style>
 </head>
 
 <body>
 
-<div class="topbar">
-  <h2>💊 Farmacias de turno</h2>
-  <div class="toggle" onclick="toggleDark()">🌙 / ☀️</div>
-</div>
+<div class="container">
 
-<button id="btnInstalar" style="display:none;">📲 Instalar app</button>
+<h2>💊 Farmacias de turno</h2>
+
+<button id="btnInstalar" class="instalar" style="display:none;">
+📲 Instalar app
+</button>
+
+<div class="filtros">
+  <select id="localidad">
+    <option value="">Todas</option>
+    <option>La Plata</option>
+    <option>Mar del Plata</option>
+    <option>Quilmes</option>
+    <option>Lanús</option>
+  </select>
+
+  <input type="text" id="cp" placeholder="Código postal">
+
+  <button onclick="cargarDatos()">Buscar</button>
+</div>
 
 <div id="lista"></div>
 
+</div>
+
 <script>
+// 📲 PWA instalar
 let deferredPrompt;
-let userLat = null;
-let userLng = null;
 
-// 🌙 modo oscuro
-function toggleDark() {
-  document.body.classList.toggle("dark");
-  localStorage.setItem("modo", document.body.classList.contains("dark") ? "dark" : "light");
-}
-
-if (localStorage.getItem("modo") === "dark") {
-  document.body.classList.add("dark");
-}
-
-// 📲 instalar app
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
@@ -116,37 +128,12 @@ document.getElementById("btnInstalar").addEventListener("click", async () => {
   }
 });
 
-// 📍 ubicación
-navigator.geolocation.getCurrentPosition(pos => {
-  userLat = pos.coords.latitude;
-  userLng = pos.coords.longitude;
-  cargarDatos();
-}, () => cargarDatos());
-
-// 📏 distancia
-function distancia(lat1, lon1, lat2, lon2) {
-  let R = 6371;
-  let dLat = (lat2-lat1) * Math.PI/180;
-  let dLon = (lon2-lon1) * Math.PI/180;
-  let a = Math.sin(dLat/2)**2 +
-          Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
-          Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-// 📅 normalizar fecha
-function normalizarFecha(fecha) {
-  let partes = fecha.split("/");
-  if (partes.length === 3) {
-    return partes[0].padStart(2,'0') + "/" +
-           partes[1].padStart(2,'0') + "/" +
-           partes[2];
-  }
-  return fecha;
-}
-
-// 📡 cargar datos
+// 📡 datos
 function cargarDatos() {
+
+  let loc = document.getElementById("localidad").value.toLowerCase();
+  let cp = document.getElementById("cp").value;
+
   fetch("https://script.google.com/macros/s/AKfycbymd8bLia1pKLJT-4Qmu2N7zez8KR_F6-TMo_nqdnwW_OFL5WzYoyBmbAT9zWCT0yFraw/exec")
     .then(res => res.json())
     .then(data => {
@@ -160,69 +147,56 @@ function cargarDatos() {
         String(hoy.getMonth()+1).padStart(2,'0') + "/" +
         hoy.getFullYear();
 
-      let farmacias = data.filter(f => {
-        if (!f.fecha) return false;
+      let resultados = data.filter(f => {
 
-        let fecha = normalizarFecha(f.fecha.toString());
+        let okLoc = !loc || (f.localidad && f.localidad.toLowerCase() === loc);
+        let okCP = !cp || (f.cp && f.cp.toString() === cp);
 
         return (
           f.turno &&
           f.turno.toString().toUpperCase() === "SI" &&
-          fecha === fechaHoy
+          f.fecha === fechaHoy &&
+          okLoc &&
+          okCP
         );
       });
 
-      // ordenar por cercanía
-      if (userLat && userLng) {
-        farmacias = farmacias.filter(f => f.lat && f.lng);
-
-        farmacias.sort((a,b) =>
-          distancia(userLat,userLng,a.lat,a.lng) -
-          distancia(userLat,userLng,b.lat,b.lng)
-        );
-      }
-
-      if (farmacias.length === 0) {
-        contenedor.innerHTML = `<div class="vacio">❌ No hay farmacias de turno hoy</div>`;
+      if (resultados.length === 0) {
+        contenedor.innerHTML = `<div class="vacio">❌ No hay resultados</div>`;
         return;
       }
 
-      farmacias.forEach(f => {
-
-        let d = (userLat && f.lat) ?
-          `📏 ${distancia(userLat,userLng,f.lat,f.lng).toFixed(2)} km<br>` : "";
+      resultados.forEach(f => {
 
         let div = document.createElement("div");
         div.className = "card";
 
         div.innerHTML = `
           <b>${f.nombre}</b><br>
-          📍 ${f.direccion}<br>
-          ${d}
+          📍 ${f.direccion} (${f.localidad})<br>
           📞 ${f.telefono}<br>
-          <span class="turno">🟢 DE TURNO (${f.horario})</span>
+          🟢 DE TURNO (${f.horario})
 
-          <a class="boton llamar" href="tel:${f.telefono}">📲 Llamar</a>
+          <a class="boton llamar" href="tel:${f.telefono}">
+            📲 Llamar
+          </a>
+
           <a class="boton mapa"
              href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.direccion)}"
-             target="_blank">📍 Cómo llegar</a>
+             target="_blank">
+            📍 Cómo llegar
+          </a>
         `;
 
         contenedor.appendChild(div);
       });
 
-    })
-    .catch(() => {
-      document.getElementById("lista").innerHTML =
-        `<div class="vacio">⚠️ Error al cargar datos</div>`;
     });
 }
-
-// 🔔 notificaciones
-Notification.requestPermission();
 </script>
 
 <script>
+// service worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
