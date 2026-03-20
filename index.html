@@ -2,34 +2,181 @@
 <html>
 <head>
   <title>Farmacias de turno</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      --bg: #f2f2f2;
+      --card: white;
+      --text: black;
+    }
+
+    body.dark {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --text: #ffffff;
+    }
+
+    body {
+      font-family: Arial;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 10px;
+      transition: 0.3s;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .toggle {
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #444;
+      color: white;
+      font-size: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    }
+
+    .boton {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+    }
+
+    .llamar {
+      background: #28a745;
+    }
+
+    .mapa {
+      background: #007bff;
+    }
+
+    .turno {
+      color: #00c853;
+      font-weight: bold;
+    }
+
+    .vacio {
+      text-align: center;
+      margin-top: 50px;
+      font-size: 18px;
+      color: gray;
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>Farmacias de turno</h2>
+<div class="topbar">
+  <h2>💊 Farmacias de turno</h2>
+  <div class="toggle" onclick="toggleDark()">🌙 / ☀️</div>
+</div>
 
-<ul id="lista"></ul>
+<div id="lista"></div>
 
 <script>
-fetch("https://script.google.com/macros/s/AKfycbymd8bLia1pKLJT-4Qmu2N7zez8KR_F6-TMo_nqdnwW_OFL5WzYoyBmbAT9zWCT0yFraw/exec")
+// 🌙 MODO OSCURO
+function toggleDark() {
+  document.body.classList.toggle("dark");
+
+  // guardar preferencia
+  if (document.body.classList.contains("dark")) {
+    localStorage.setItem("modo", "dark");
+  } else {
+    localStorage.setItem("modo", "light");
+  }
+}
+
+// cargar preferencia
+if (localStorage.getItem("modo") === "dark") {
+  document.body.classList.add("dark");
+}
+
+
+// 📡 DATOS
+fetch("TU_URL_DE_APPS_SCRIPT")
   .then(res => res.json())
   .then(data => {
-    let lista = document.getElementById("lista");
+
+    let contenedor = document.getElementById("lista");
+    contenedor.innerHTML = "";
+
+    let hoy = new Date();
+    let dia = String(hoy.getDate()).padStart(2, '0');
+    let mes = String(hoy.getMonth() + 1).padStart(2, '0');
+    let fechaHoy = dia + "/" + mes;
+
+    let hayResultados = false;
 
     data.forEach(f => {
-      if (f.turno === "SI") {
-        let li = document.createElement("li");
 
-        li.innerHTML = `
+      if (
+        f.turno &&
+        f.turno.toUpperCase() === "SI" &&
+        f.fecha === fechaHoy
+      ) {
+
+        hayResultados = true;
+
+        let div = document.createElement("div");
+        div.className = "card";
+
+        div.innerHTML = `
           <b>${f.nombre}</b><br>
-          ${f.direccion}<br>
+          📍 ${f.direccion}<br>
           📞 ${f.telefono}<br>
-          🟢 DE TURNO (${f.horario})
-          <hr>
+          <span class="turno">🟢 DE TURNO (${f.horario})</span><br>
+
+          <a class="boton llamar" href="tel:${f.telefono}">
+            📲 Llamar
+          </a>
+
+          <a class="boton mapa" 
+             href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.direccion)}" 
+             target="_blank">
+            📍 Cómo llegar
+          </a>
         `;
 
-        lista.appendChild(li);
+        contenedor.appendChild(div);
       }
     });
+
+    if (!hayResultados) {
+      contenedor.innerHTML = `
+        <div class="vacio">
+          ❌ No hay farmacias de turno hoy
+        </div>
+      `;
+    }
+
+  })
+  .catch(err => {
+    document.getElementById("lista").innerHTML = `
+      <div class="vacio">
+        ⚠️ Error al cargar datos
+      </div>
+    `;
   });
 </script>
 
