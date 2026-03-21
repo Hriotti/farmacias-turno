@@ -5,20 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Farmacias de Turno</title>
 <style>
-body { font-family: Arial; background:#f4f4f4; margin:0; padding:0; }
+/* RESET BÁSICO */
+* { margin:0; padding:0; box-sizing:border-box; }
+
+/* BODY */
+body { font-family: Arial, sans-serif; background:#f4f4f4; color:#333; }
+
+/* HEADER */
 header { background:#2196F3; color:white; text-align:center; padding:1rem; font-size:1.5rem; }
+
+/* FILTROS */
 .filtros { display:flex; justify-content:center; flex-wrap:wrap; gap:0.5rem; padding:1rem; }
 .filtros select { padding:0.5rem; font-size:1rem; border-radius:5px; border:1px solid #ccc; }
-#listaFarmacias { display:flex; flex-wrap:wrap; justify-content:center; padding:1rem; }
-.farmacia { background:white; width:100%; max-width:350px; margin:0.5rem; padding:1rem; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+
+/* LISTA DE FARMACIAS */
+#listaFarmacias { display:flex; flex-wrap:wrap; justify-content:center; gap:1rem; padding:1rem; }
+.farmacia { background:white; flex:1 1 300px; max-width:350px; padding:1rem; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+
+/* ESTILOS INTERNOS */
 .farmacia h2 { font-size:1.2rem; margin-bottom:0.5rem; }
-.farmacia p { margin:0.2rem 0; }
+.farmacia p { margin:0.2rem 0; font-size:0.95rem; }
 .farmacia a { display:inline-block; margin-top:0.5rem; color:#2196F3; text-decoration:none; font-weight:bold; }
 .farmacia a:hover { text-decoration:underline; }
-@media (max-width:480px) { 
-  header { font-size:1.2rem; } 
-  .farmacia h2 { font-size:1.1rem; } 
-  .farmacia p, .farmacia a { font-size:0.95rem; } 
+
+/* MEDIA QUERIES */
+@media (max-width:768px) {
+  header { font-size:1.3rem; }
+  .farmacia { flex:1 1 100%; max-width:none; }
+  .farmacia h2 { font-size:1.1rem; }
+  .farmacia p, .farmacia a { font-size:0.9rem; }
+}
+@media (max-width:480px) {
+  header { font-size:1.1rem; }
+  .filtros { flex-direction:column; align-items:center; }
+  .filtros select { width:90%; }
 }
 </style>
 </head>
@@ -38,13 +58,17 @@ const provinciaSelect = document.getElementById('provinciaSelect');
 const localidadSelect = document.getElementById('localidadSelect');
 let farmacias = [];
 
-// <<<<< REEMPLAZA CON LA URL DE TU WORKER >>>>>
-const WORKER_URL = "https://farmacias-turno.hernan-riotti.workers.dev/";
+// <<< REEMPLAZAR CON TU WORKER URL >>>
+const WORKER_URL = "https://farmacias-turno.hernan-riotti.workers.dev";
 
 fetch(WORKER_URL)
   .then(res => res.json())
   .then(data => {
-    farmacias = data.map(f => ({ ...f, InicioObj: new Date(f.Inicio), FinObj: new Date(f.Fin) }));
+    farmacias = data.map(f => ({
+      ...f,
+      InicioObj: new Date(f.Inicio),
+      FinObj: new Date(f.Fin)
+    }));
     cargarFiltros();
     mostrarFarmacias(farmacias);
   })
@@ -54,18 +78,16 @@ function cargarFiltros() {
   const provincias = [...new Set(farmacias.map(f => f.Provincia))].sort();
   const localidades = [...new Set(farmacias.map(f => f.Localidad))].sort();
 
-  provincias.forEach(p => { 
-    const option = document.createElement('option'); 
-    option.value = p; 
-    option.textContent = p; 
-    provinciaSelect.appendChild(option); 
+  provincias.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    provinciaSelect.appendChild(opt);
   });
 
-  localidades.forEach(l => { 
-    const option = document.createElement('option'); 
-    option.value = l; 
-    option.textContent = l; 
-    localidadSelect.appendChild(option); 
+  localidades.forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l; opt.textContent = l;
+    localidadSelect.appendChild(opt);
   });
 
   provinciaSelect.addEventListener('change', filtrarFarmacias);
@@ -76,8 +98,8 @@ function filtrarFarmacias() {
   const prov = provinciaSelect.value;
   const loc = localidadSelect.value;
   let filtradas = farmacias;
-  if (prov) filtradas = filtradas.filter(f => f.Provincia === prov);
-  if (loc) filtradas = filtradas.filter(f => f.Localidad === loc);
+  if(prov) filtradas = filtradas.filter(f => f.Provincia === prov);
+  if(loc) filtradas = filtradas.filter(f => f.Localidad === loc);
   mostrarFarmacias(filtradas);
 }
 
