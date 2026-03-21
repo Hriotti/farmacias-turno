@@ -41,10 +41,10 @@ header { background:#2196F3; color:white; text-align:center; padding:1rem; font-
   .filtros select { width:90%; }
 }
 </style>
-/* MANIFEST INICIO -AGREGADO*/
+<!-- MANIFEST INICIO -AGREGADO -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2196F3">
-/* MANIFEST INICIO -AGREGADO*/
+<!-- MANIFEST FIN -AGREGADO -->
 </head>
 <body>
 <header><h1>Farmacias de Turno</h1></header>
@@ -126,13 +126,13 @@ function mostrarFarmacias(lista) {
   });
 }
 </script>
-/* Registrar el Service Worker INICIO -AGREGADO*/
+<!-- Registrar el Service Worker INICIO -AGREGADO -->
 <script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js")
     .then(() => console.log("Service Worker registrado"));
 }
 </script>
-/* Registrar el Service Worker FIN -AGREGADO*/
+<!-- Registrar el Service Worker FIN -AGREGADO -->
 </body>
 </html>
