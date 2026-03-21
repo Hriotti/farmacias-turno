@@ -1,21 +1,104 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Farmacias de Turno</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farmacias de Turno</title>
+<style>
+body { font-family: Arial; background:#f4f4f4; margin:0; padding:0; }
+header { background:#2196F3; color:white; text-align:center; padding:1rem; font-size:1.5rem; }
+.filtros { display:flex; justify-content:center; flex-wrap:wrap; gap:0.5rem; padding:1rem; }
+.filtros select { padding:0.5rem; font-size:1rem; border-radius:5px; border:1px solid #ccc; }
+#listaFarmacias { display:flex; flex-wrap:wrap; justify-content:center; padding:1rem; }
+.farmacia { background:white; width:100%; max-width:350px; margin:0.5rem; padding:1rem; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+.farmacia h2 { font-size:1.2rem; margin-bottom:0.5rem; }
+.farmacia p { margin:0.2rem 0; }
+.farmacia a { display:inline-block; margin-top:0.5rem; color:#2196F3; text-decoration:none; font-weight:bold; }
+.farmacia a:hover { text-decoration:underline; }
+@media (max-width:480px) { 
+  header { font-size:1.2rem; } 
+  .farmacia h2 { font-size:1.1rem; } 
+  .farmacia p, .farmacia a { font-size:0.95rem; } 
+}
+</style>
 </head>
 <body>
-  <header><h1>Farmacias de Turno</h1></header>
+<header><h1>Farmacias de Turno</h1></header>
 
-  <div class="filtros">
-    <select id="provinciaSelect"><option value="">Todas las Provincias</option></select>
-    <select id="localidadSelect"><option value="">Todas las Localidades</option></select>
-  </div>
+<div class="filtros">
+  <select id="provinciaSelect"><option value="">Todas las Provincias</option></select>
+  <select id="localidadSelect"><option value="">Todas las Localidades</option></select>
+</div>
 
-  <main id="listaFarmacias"></main>
+<main id="listaFarmacias"></main>
 
-  <script src="script.js"></script>
+<script>
+const contenedor = document.getElementById('listaFarmacias');
+const provinciaSelect = document.getElementById('provinciaSelect');
+const localidadSelect = document.getElementById('localidadSelect');
+let farmacias = [];
+
+// <<<<< REEMPLAZA CON LA URL DE TU WORKER >>>>>
+const WORKER_URL = "https://farmacias-turno.hernan-riotti.workers.dev/";
+
+fetch(WORKER_URL)
+  .then(res => res.json())
+  .then(data => {
+    farmacias = data.map(f => ({ ...f, InicioObj: new Date(f.Inicio), FinObj: new Date(f.Fin) }));
+    cargarFiltros();
+    mostrarFarmacias(farmacias);
+  })
+  .catch(err => console.error("Error cargando los datos:", err));
+
+function cargarFiltros() {
+  const provincias = [...new Set(farmacias.map(f => f.Provincia))].sort();
+  const localidades = [...new Set(farmacias.map(f => f.Localidad))].sort();
+
+  provincias.forEach(p => { 
+    const option = document.createElement('option'); 
+    option.value = p; 
+    option.textContent = p; 
+    provinciaSelect.appendChild(option); 
+  });
+
+  localidades.forEach(l => { 
+    const option = document.createElement('option'); 
+    option.value = l; 
+    option.textContent = l; 
+    localidadSelect.appendChild(option); 
+  });
+
+  provinciaSelect.addEventListener('change', filtrarFarmacias);
+  localidadSelect.addEventListener('change', filtrarFarmacias);
+}
+
+function filtrarFarmacias() {
+  const prov = provinciaSelect.value;
+  const loc = localidadSelect.value;
+  let filtradas = farmacias;
+  if (prov) filtradas = filtradas.filter(f => f.Provincia === prov);
+  if (loc) filtradas = filtradas.filter(f => f.Localidad === loc);
+  mostrarFarmacias(filtradas);
+}
+
+function mostrarFarmacias(lista) {
+  contenedor.innerHTML = "";
+  lista.forEach(f => {
+    const inicioStr = f.InicioObj.toLocaleString();
+    const finStr = f.FinObj.toLocaleString();
+    const div = document.createElement('div');
+    div.className = 'farmacia';
+    div.innerHTML = `
+      <h2>${f.Nombre}</h2>
+      <p>Dirección: ${f.Dirección}</p>
+      <p>Localidad: ${f.Localidad}</p>
+      <p>Provincia: ${f.Provincia}</p>
+      <p>Turno: ${inicioStr} - ${finStr}</p>
+      <p>Teléfono: <a href="tel:${f.Teléfono}">${f.Teléfono}</a></p>
+    `;
+    contenedor.appendChild(div);
+  });
+}
+</script>
 </body>
 </html>
