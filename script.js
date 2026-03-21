@@ -1,5 +1,5 @@
 // URL de tu Apps Script Web App
-const apiUrl = "https://script.google.com/macros/s/AKfycbyRGvhehOFLdtlkmKpLOdruKeuZDsEcwgvjCUwNuhd4gQibGIqvhzyoYPyfojYyLCGD/exec";
+const apiUrl = "https://script.google.com/macros/s/AKfycbz2647JNTcWpFWzO2f3vQ2Cczec32L_cIkrNVdmozcEeT-BcJmW__cvcOUtuy2E6JpU/exec";
 
 let farmacias = [];
 const contenedor = document.getElementById('listaFarmacias');
