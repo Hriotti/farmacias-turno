@@ -1,4 +1,4 @@
-const apiUrl = "https://script.google.com/macros/s/AKfycbyyobjxkIrExWNWXwhE8wXhtCgybhPvaPiLwC7-egs7orMhXuElH9oVbDFE_IcU5JY4iQ/exec"; // pega la URL /exec de tu Apps Script aquí
+const apiUrl = "https://script.google.com/macros/s/AKfycbyuOWtyatPr6ey3ApBbu-7VmwIyPe83LULY6XpCtQTKTbIzzlRZA5nO6cZ_tT6gjR-pTw/exec"; // pega la URL /exec de tu Apps Script aquí
 
 let farmacias = [];
 
