@@ -1,200 +1,27 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Farmacias de Turno</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root { --bg:#0b132b; --card:#1c2541; --accent:#3a86ff; --text:#e0e6f8; --muted:#9fb3c8; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family:system-ui,Segoe UI,Roboto,Ubuntu; background:var(--bg); color:var(--text); }
-    header { padding:1rem; display:grid; gap:.75rem; max-width:1100px; margin:auto; }
-    h1 { margin:.25rem 0; font-size:1.4rem; }
-    .filters { display:grid; grid-template-columns:1fr; gap:.5rem; }
-    .row { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
-    select, input[type="text"] {
-      width:100%; padding:.75rem; border-radius:.6rem; border:1px solid #2e3a5f; background:#0f1b3d; color:var(--text);
-    }
-    main { max-width:1100px; margin:1rem auto 2rem; padding:0 1rem; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem; }
-    .card { background:var(--card); border:1px solid #25345e; border-radius:1rem; padding:1rem; box-shadow:0 2px 12px rgba(0,0,0,.25); }
-    .card h3 { margin:.2rem 0 .6rem; }
-    .pill { display:inline-block; font-size:.75rem; background:#13204a; color:var(--muted); padding:.2rem .5rem; border-radius:999px; margin-right:.35rem; }
-    .ok { background:#0a7d2c; color:#fff; }
-    .warn { background:#8a2be2; color:#fff; }
-    .meta { color:var(--muted); font-size:.85rem; }
-    footer { text-align:center; color:var(--muted); padding:1rem; font-size:.85rem; }
-    @media (max-width:640px){ .row { grid-template-columns:1fr; } }
-    @media (max-width:400px){ .card { padding:.75rem; } h1 { font-size:1.2rem; } }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <h1>Farmacias de Turno</h1>
-    <div class="filters">
-      <div class="row">
-        <label>
-          <div class="meta">Fecha</div>
-          <input id="fecha" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" autocomplete="off" />
-        </label>
-        <div></div>
-      </div>
-      <div class="row">
-        <label>
-          <div class="meta">Provincia</div>
-          <select id="provincia"><option value="">Todas</option></select>
-        </label>
-        <label>
-          <div class="meta">Localidad</div>
-          <select id="localidad" disabled><option value="">Todas</option></select>
-        </label>
-      </div>
-    </div>
   </header>
 
-  <main>
-    <div id="status" class="meta">Cargando…</div>
-    <div id="cards" class="grid"></div>
-  </main>
+  <div class="filtros">
+    <select id="provinciaSelect">
+      <option value="">Todas las Provincias</option>
+    </select>
+    <select id="localidadSelect">
+      <option value="">Todas las Localidades</option>
+    </select>
+  </div>
 
-  <footer>Datos provistos por la planilla del titular del sitio.</footer>
+  <main id="listaFarmacias"></main>
 
-  <script>
-    // ====== CONFIG ======
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbymd8bLia1pKLJT-4Qmu2N7zez8KR_F6-TMo_nqdnwW_OFL5WzYoyBmbAT9zWCT0yFraw/exec'; // <-- reemplazar
-
-    // ====== STATE ======
-    let registros = [];
-    const $prov   = document.getElementById('provincia');
-    const $loc    = document.getElementById('localidad');
-    const $date   = document.getElementById('fecha');
-    const $cards  = document.getElementById('cards');
-    const $status = document.getElementById('status');
-
-    // ====== FECHA dd/mm/aaaa ======
-    function toISOFromDMY(dmy) {
-      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dmy)) return null;
-      const [dd, mm, yyyy] = dmy.split('/').map(Number);
-      const ok = dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12 && yyyy >= 1900;
-      if (!ok) return null;
-      return `${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
-    }
-    function toDMYFromDate(dateObj) {
-      const dd = String(dateObj.getDate()).padStart(2,'0');
-      const mm = String(dateObj.getMonth()+1).padStart(2,'0');
-      const yyyy = dateObj.getFullYear();
-      return `${dd}/${mm}/${yyyy}`;
-    }
-
-    (function setDefaultDate(){
-      // Fecha local del usuario, visible como dd/mm/aaaa
-      const now = new Date();
-      $date.value = toDMYFromDate(now);
-    })();
-
-    // Máscara simple al tipear: dd/mm/aaaa
-    $date.addEventListener('input', (e)=>{
-      let v = e.target.value.replace(/[^\d]/g,'').slice(0,8); // solo números, hasta 8
-      if (v.length >= 5) v = `${v.slice(0,2)}/${v.slice(2,4)}/${v.slice(4)}`;
-      else if (v.length >= 3) v = `${v.slice(0,2)}/${v.slice(2)}`;
-      e.target.value = v;
-    });
-
-    // ====== CARGA (JSONP) ======
-    function cargarDatosJSONP(fechaISO, fechaDMYVisible){
-      $status.textContent = 'Cargando…';
-      const cbName = 'onGASData_' + Math.random().toString(36).slice(2);
-      window[cbName] = function(payload){
-        delete window[cbName];
-        script.remove();
-
-        if(payload && payload.data){
-          registros = payload.data;
-          poblarFiltros(registros);
-          render();
-          const dmyTxt = fechaDMYVisible || $date.value || '';
-          $status.textContent = `${payload.total} resultado(s) para ${dmyTxt}`;
-        } else {
-          registros = [];
-          render();
-          $status.textContent = 'Sin datos para la fecha seleccionada.';
-        }
-      };
-      const url = `${GAS_URL}?date=${encodeURIComponent(fechaISO)}&callback=${cbName}`;
-      const script = document.createElement('script');
-      script.src = url;
-      script.onerror = () => {
-        $status.textContent = 'Error cargando datos.';
-        script.remove();
-      };
-      document.body.appendChild(script);
-    }
-
-    function poblarFiltros(rows){
-      const provincias = Array.from(new Set(rows.map(r => r.provincia).filter(Boolean)))
-        .sort((a,b)=>a.localeCompare(b,'es'));
-      $prov.innerHTML = '<option value="">Todas</option>' + provincias.map(p => `<option>${p}</option>`).join('');
-      $loc.innerHTML = '<option value="">Todas</option>';
-      $loc.disabled = false;
-    }
-
-    function localidadesDe(prov){
-      return Array.from(new Set(registros
-        .filter(r => !prov || r.provincia === prov)
-        .map(r => r.localidad).filter(Boolean)))
-        .sort((a,b)=>a.localeCompare(b,'es'));
-    }
-
-    function escapeHTML(s){ return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-    function render(){
-      const prov = $prov.value;
-      const loc  = $loc.value;
-      const filtrados = registros.filter(r =>
-        (!prov || r.provincia === prov) &&
-        (!loc || r.localidad === loc)
-      );
-
-      $cards.innerHTML = filtrados.map(r => {
-        const badge = (r.abierta_ahora === true) ? '<span class="pill ok">Abierta ahora</span>' :
-                      (r.abierta_ahora === false) ? '<span class="pill warn">Fuera de turno</span>' : '';
-        return `
-          <article class="card">
-            <h3>${escapeHTML(r.farmacia || 'Sin nombre')}</h3>
-            <div class="meta">${r.provincia || ''} · ${r.localidad || ''}</div>
-            <div class="meta">${escapeHTML(r.direccion || '')}</div>
-            <div class="meta">${escapeHTML(r.telefono || '')}</div>
-            <div style="margin:.5rem 0;">
-              <span class="pill">Inicio: ${escapeHTML(r.inicio_guardia || '-')}</span>
-              <span class="pill">Fin: ${escapeHTML(r.fin_guardia || '-')}</span>
-              ${badge}
-            </div>
-            ${r.observaciones ? `<div class="meta">${escapeHTML(r.observaciones)}</div>` : ''}
-          </article>`;
-      }).join('');
-    }
-
-    // Eventos
-    $date.addEventListener('change', ()=>{
-      const dmy = $date.value.trim();
-      const iso = toISOFromDMY(dmy);
-      if (!iso) { $status.textContent = 'Formato de fecha inválido. Usá dd/mm/aaaa.'; return; }
-      cargarDatosJSONP(iso, dmy);
-    });
-    document.getElementById('provincia').addEventListener('change', ()=>{
-      const locs = localidadesDe($prov.value);
-      $loc.innerHTML = '<option value="">Todas</option>' + locs.map(l => `<option>${l}</option>`).join('');
-      render();
-    });
-    document.getElementById('localidad').addEventListener('change', render);
-
-    // Primera carga
-    (function primeraCarga(){
-      const dmy = $date.value.trim();
-      const iso = toISOFromDMY(dmy);
-      if (iso) cargarDatosJSONP(iso, dmy);
-    })();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
-``
