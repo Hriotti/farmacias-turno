@@ -73,20 +73,23 @@ fetch(WORKER_URL)
       InicioObj: new Date(f.Inicio),
       FinObj: new Date(f.Fin)
     }));
+
     cargarFiltros();
-//    mostrarFarmacias(farmacias);
+
     const ahora = new Date(new Date().toLocaleString("en-US", {
-    timeZone: "America/Argentina/Buenos_Aires"
-      
-  }));
+      timeZone: "America/Argentina/Buenos_Aires"
+    }));
+
     const farmaciasActivas = farmacias.filter(f => {
-    return ahora >= f.InicioObj && ahora <= f.FinObj;
-  });
-    mostrarFarmacias(farmaciasActivas);
-      if(lista.length === 0){
+      return ahora >= f.InicioObj && ahora <= f.FinObj;
+    });
+
+    if (farmaciasActivas.length === 0) {
       contenedor.innerHTML = "<p>No hay farmacias de turno en este momento</p>";
       return;
-}
+    }
+
+    mostrarFarmacias(farmaciasActivas);
   })
   .catch(err => console.error("Error cargando los datos:", err));
 
