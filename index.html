@@ -142,6 +142,10 @@ function mostrarFarmacias(lista) {
     contenedor.appendChild(div);
   });
 }
+  setInterval(() => {
+  filtrarFarmacias();
+}, 60000); // cada 1 minuto
+  
 </script>
 <!-- Registrar el Service Worker INICIO -AGREGADO -->
 <script>
