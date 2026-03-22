@@ -83,6 +83,10 @@ fetch(WORKER_URL)
     return ahora >= f.InicioObj && ahora <= f.FinObj;
   });
     mostrarFarmacias(farmaciasActivas);
+      if(lista.length === 0){
+      contenedor.innerHTML = "<p>No hay farmacias de turno en este momento</p>";
+      return;
+}
   })
   .catch(err => console.error("Error cargando los datos:", err));
 
